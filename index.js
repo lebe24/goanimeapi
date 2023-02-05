@@ -4,11 +4,7 @@ const cheerio = require('cheerio');
 const fs = require('fs')
 
 
-const baseURL = "https://gogoanime.ai/";
-
 const string = 'https://www1.gogoanime.bid/'
-const cat = 'https://www1.gogoanime.bid/category/'
-
 
 const app = express();
 app.use(express.json());
@@ -17,10 +13,9 @@ app.use('/hello', express.static('public'))
 
 app.get('/popular/:page',(req,res) =>{
 
-    let txt = [],img = []
+    let txt = [],img = [],movie =[]
     let result = []
-    let page = req.params;
-    const url = `${string}popular.html?page=${page}`
+    const url = `${string}popular.html?page=${req.params.page}`
 
     // if(isNaN(page)) return res.status(404).json({result})
 
@@ -35,10 +30,14 @@ app.get('/popular/:page',(req,res) =>{
                 query.find('img').each(function (i, elem){
                     img.push($(this).prop('src'))
                 })
-                result  = txt.map((elem1, index) =>{
-                    return { img:img[index], text: elem1 };
+                query.query = $('.items') 
+                query.find('.name').each(function (i, elem) {
+                    movie.push($(this).find('a').prop('href').split("/").pop())
                 })
-                console.log(result)
+                result  = txt.map((elem1, index) =>{
+                    return { img:img[index], text: elem1 , id:movie[index] };
+                })
+                
                 res.status(200).json({result})
             }catch(e){
                 res.status(404).json({e: "404"})
@@ -49,52 +48,148 @@ app.get('/popular/:page',(req,res) =>{
     })
 })
 
-const cate = async() =>{
+app.get('/movie/:id',(req,res) =>{
+    let Movie = []
+    
+    const url = `${string}category/${req.params.id}`
 
-    let txt = [],img = []
-    let fruits = [];
-
-    const url = 'https://www1.gogoanime.bid/category/nierautomata-ver1-1a'
-    request(url,(error,res,html)=>{
-        try{
-            var $ = cheerio.load('<div><p>hello</p><p>make</p></div>');
-            const p =  $('p').get(0)
-             console.log(p.text())
-        }catch(e){
-            throw(e)
+    request(url,(error,response,html) =>{
+        if(!error){
+            try{
+                var $ = cheerio.load(html);
+                const des =  $('.anime_info_body_bg').find($('p').get(2)).text()
+                const genre =  $('.anime_info_body_bg').find($('p').get(3)).text().replace(/\s/g, "")
+                const ep = $('#episode_page').find('li').text().replace(/\s/g, " ")
+                Movie = {des,genre,ep}
+                res.status(200).json({Movie})
+                console.log(Movie)
+            }catch(e){
+                throw(e)
+            }
         }
     })
 
-}
+})
 
+app.get('/video/:id/:ep',(req,res)=>{
 
-// const ch = async() =>{
-//     let txt = [],img = []
+    const url = `${string}${req.params.id}-episode-${req.params.ep}`
+                // https://www1.gogoanime.bid/id=dungeon-ni-deai-wo-motomeru-no-wa-machigatteiru-darou-ka-iv-fuka-shou-yakusai-hen/ep=2
+    console.log(url)
+    request(url,(error,response,html)=>{
+        if(!error){
+            try{
+                var $ = cheerio.load(html);
+                var iframe = $.html($('iframe'))
+                res.status(200).json({iframe}) 
+                console.log(url)
+            }catch(e){
+                res.status(404).json(iframe)
+                throw(e)
+            }
+        }
+    })
+        
+})
+
+app.get('/search/:id',(req,res)=>{
+
+    let txt = [],img = [],movie = []
+
+    const url = `https://www1.gogoanime.bid/search.html?keyword=${req.params.id}`
+    request(url,(error,response,html) =>{
+        if(!error){
+            try{
+                var $ = cheerio.load(html);
+                const query = $('.items') 
+                query.find('.name').each(function (i, elem) {
+                    txt.push($(this).text().replace(/[\n\t]/g, ""))
+                });
+                query.find('img').each(function (i, elem){
+                    img.push($(this).prop('src'))
+                })
+                query.query = $('.items') 
+                query.find('.name').each(function (i, elem) {
+                    movie.push($(this).find('a').prop('href').split("/").pop())
+                })
+                result  = txt.map((elem1, index) =>{
+                    return { img:img[index], text: elem1 , id:movie[index] };
+                })
+                
+                res.status(200).json({result})
+            }catch(e){
+                res.status(404).json({e: "404"})
+            }
+        }
+
+        
+    })
+
+})
+
+app.get('/genre/:cate/:num',(req,res)=>{
+
+    let txt = [],img = [],movie = []
+    const url = `https://www1.gogoanime.bid/genre/${req.params.cate}?page=${req.params.num}`
+    request(url,(error,response,html) =>{
+        if(!error){
+            try{
+                var $ = cheerio.load(html);
+                const query = $('.items') 
+                query.find('.name').each(function (i, elem) {
+                    txt.push($(this).text().replace(/[\n\t]/g, ""))
+                });
+                query.find('img').each(function (i, elem){
+                    img.push($(this).prop('src'))
+                })
+                query.query = $('.items') 
+                query.find('.name').each(function (i, elem) {
+                    movie.push($(this).find('a').prop('href').split("/").pop())
+                })
+                result  = txt.map((elem1, index) =>{
+                    return { img:img[index], text: elem1 , id:movie[index] };
+                })
+                
+                res.status(200).json({result})
+            }catch(e){
+                res.status(404).json({e: "404"})
+            }
+        }
+
+        
+    })
+})
+
+// const cate = async() =>{
+
+//     let txt = [],img = [],movie =[]
 //     let fruits = [];
+
+//     const url = 'https://www1.gogoanime.bid/search.html?keyword=ben 10'
 //     request(url,(error,res,html)=>{
 //         try{
 //             var $ = cheerio.load(html);
 //             const query = $('.items')
 //             query.find('.name').each(function (i, elem) {
-//                  txt.push($(this).text())
+//                 txt.push($(this).text().replace(/[\n\t]/g, ""))
 //             });
-//            query.find('img').each(function (i, elem){
-//             img.push($(this).prop('src'))
-//            })
-//             fruits  = txt.map((elem1, index) =>{
-//                 return { img:img[index],
-//                     text: elem1 };
+//             query.find('img').each(function (i, elem) {
+//                 img.push($(this).prop('src'))
+//             });
+//             query.find('.name').each(function (i, elem) {
+//                 movie.push($(this).find('a').prop('href').split("/").pop())
 //             })
-//             //  fs.writeFileSync('./html.json',`${fruits}`)
-//             console.log(fruits)
+//             result  = txt.map((elem1, index) =>{
+//                 return { img:img[index], text: elem1 , id:movie[index] };
+//             })
+//             console.log(result)
 //         }catch(e){
 //             throw(e)
 //         }
 //     })
-    
-    
 
 // }
+
 
 const start = async () => {
 

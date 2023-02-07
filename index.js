@@ -196,7 +196,6 @@ const start = async () => {
     try{
         app.listen(3000, () => {
             console.log(`Server is running... 3000`);
-            cate()   
         });
     }catch(e){
         throw(e)

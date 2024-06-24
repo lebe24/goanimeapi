@@ -4,7 +4,7 @@ const cheerio = require('cheerio');
 const fs = require('fs')
 
 
-const string = 'https://www1.gogoanime.bid/'
+const string = 'https://ww8.gogoanimes.org/'
 
 const app = express();
 app.use(express.json());
